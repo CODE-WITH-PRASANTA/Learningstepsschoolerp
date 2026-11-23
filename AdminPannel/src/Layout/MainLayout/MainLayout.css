@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --blue-primary: #1d4ed8;
+  --blue-dark: #1e3a8a;
+  --blue-accent: #2563eb;
+  --blue-soft: #eff6ff;
+  --blue-border: #dbeafe;
+  --white: #ffffff;
+  --bg-surface: #f8fafc;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --topbar-height: 68px;
+  --rail-width: 84px;
+  --drawer-width: 260px;
+  --transition-smooth: all 0.32s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-surface);
+  color: var(--text-main);
+  overflow-x: hidden;
+}
+
+.MainLayout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg-surface);
+}
+
+.MainLayout-body {
+  display: flex;
+  flex: 1;
+  padding-top: var(--topbar-height);
+  position: relative;
+}
+
+.MainLayout-content {
+  flex: 1;
+  margin-left: var(--rail-width);
+  padding: 24px;
+  min-height: calc(100vh - var(--topbar-height));
+  transition: var(--transition-smooth);
+  width: calc(100% - var(--rail-width));
+}
+
+.MainLayout-content--drawerOpen {
+  margin-left: calc(var(--rail-width) + var(--drawer-width));
+  width: calc(100% - var(--rail-width) - var(--drawer-width));
+}
+
+.MainLayout-container {
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.MainLayout-placeholder {
+  background: var(--white);
+  border: 1px solid var(--blue-border);
+  border-radius: 16px;
+  padding: 40px 32px;
+  box-shadow: 0 4px 20px rgba(30, 58, 138, 0.04);
+}
+
+.MainLayout-placeholder h2 {
+  color: var(--blue-dark);
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.MainLayout-placeholder p {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.MainLayout-backdrop {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .MainLayout-content--drawerOpen {
+    margin-left: var(--rail-width);
+    width: calc(100% - var(--rail-width));
+  }
+}
+
+@media (max-width: 768px) {
+  .MainLayout-content,
+  .MainLayout-content--drawerOpen {
+    margin-left: 0;
+    width: 100%;
+    padding: 16px;
+  }
+
+  .MainLayout-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    top: var(--topbar-height);
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 90;
+  }
+}
