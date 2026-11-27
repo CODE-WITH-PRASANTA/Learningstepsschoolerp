@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
-import Sidebar from '../Sidebar/Sidebar';
-import Topbar from '../Topbar/Topbar';
-import './MainLayout.css';
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
 
-const MainLayout = ({ children }) => {
+import Topbar from "../Topbar/Topbar";
+import Sidebar from "../Sidebar/Sidebar";
+import PageHeader from "../../Components/PageHeader/PageHeader";
+import "./MainLayout.css";
+
+const MainLayout = () => {
+  // Which module's slide-out menu is open (null = closed)
   const [activeMenu, setActiveMenu] = useState(null);
+  // Sidebar open/close on phones
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const handleMenuSelect = (menuKey) => {
@@ -21,12 +26,14 @@ const MainLayout = ({ children }) => {
 
   return (
     <div className="MainLayout">
+      {/* Top bar: logo, search, notifications, profile */}
       <Topbar
         onToggleMobileSidebar={toggleMobileSidebar}
         isMobileSidebarOpen={isMobileSidebarOpen}
       />
 
       <div className="MainLayout-body">
+        {/* Left icon rail + slide-out menu */}
         <Sidebar
           activeMenu={activeMenu}
           onMenuSelect={handleMenuSelect}
@@ -35,6 +42,7 @@ const MainLayout = ({ children }) => {
           onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
+        {/* Dark overlay behind the sidebar on phones */}
         {isMobileSidebarOpen && (
           <div
             className="MainLayout-backdrop"
@@ -42,18 +50,18 @@ const MainLayout = ({ children }) => {
           />
         )}
 
+        {/* Page area */}
         <main
           className={`MainLayout-content ${
-            activeMenu ? 'MainLayout-content--drawerOpen' : ''
+            activeMenu ? "MainLayout-content--drawerOpen" : ""
           }`}
         >
           <div className="MainLayout-container">
-            {children || (
-              <div className="MainLayout-placeholder">
-                <h2>Welcome to LearningSteps School Admin Panel</h2>
-                <p>Select any module from the left navigation bar to manage records.</p>
-              </div>
-            )}
+            {/* Back button + page title + location path (Home > Students > ...) */}
+            <PageHeader />
+
+            {/* The current page renders here */}
+            <Outlet />
           </div>
         </main>
       </div>

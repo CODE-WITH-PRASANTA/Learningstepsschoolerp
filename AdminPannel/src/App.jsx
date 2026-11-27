@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import MainLayout from "./Layout/MainLayout/MainLayout";
 import Dashboard from "./Pages/Dashboard/Dashboard";
+import StudentAdmission from "./Components/StudentAdmission/StudentAdmission";
 
 const App = () => {
   return (
@@ -11,6 +12,11 @@ const App = () => {
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Dashboard />} />
+
+          <Route
+            path="students/admission"
+            element={<StudentAdmission />}
+          />
         </Route>
       </Routes>
     </BrowserRouter>

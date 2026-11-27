@@ -13,7 +13,6 @@
   --topbar-height: 68px;
   --rail-width: 84px;
   --drawer-width: 260px;
-  --transition-smooth: all 0.32s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 * {
@@ -36,6 +35,7 @@ body {
   background-color: var(--bg-surface);
 }
 
+/* Leaves room for the fixed Topbar */
 .MainLayout-body {
   display: flex;
   flex: 1;
@@ -43,15 +43,17 @@ body {
   position: relative;
 }
 
+/* Page area: leaves room for the fixed icon rail. No animation. */
 .MainLayout-content {
   flex: 1;
+  min-width: 0;
   margin-left: var(--rail-width);
-  padding: 24px;
+  padding: 20px 24px 24px;
   min-height: calc(100vh - var(--topbar-height));
-  transition: var(--transition-smooth);
   width: calc(100% - var(--rail-width));
 }
 
+/* Slide-out menu is open: the page moves right */
 .MainLayout-content--drawerOpen {
   margin-left: calc(var(--rail-width) + var(--drawer-width));
   width: calc(100% - var(--rail-width) - var(--drawer-width));
@@ -62,6 +64,7 @@ body {
   margin: 0 auto;
 }
 
+/* Optional placeholder card for pages that are not built yet */
 .MainLayout-placeholder {
   background: var(--white);
   border: 1px solid var(--blue-border);
@@ -82,10 +85,12 @@ body {
   font-size: 0.95rem;
 }
 
+/* Only used on phones */
 .MainLayout-backdrop {
   display: none;
 }
 
+/* ---------- Tablet: the slide-out menu overlays the page ---------- */
 @media (max-width: 1024px) {
   .MainLayout-content--drawerOpen {
     margin-left: var(--rail-width);
@@ -93,12 +98,13 @@ body {
   }
 }
 
+/* ---------- Phone: sidebar becomes an overlay ---------- */
 @media (max-width: 768px) {
   .MainLayout-content,
   .MainLayout-content--drawerOpen {
     margin-left: 0;
     width: 100%;
-    padding: 16px;
+    padding: 12px;
   }
 
   .MainLayout-backdrop {
@@ -107,7 +113,6 @@ body {
     inset: 0;
     top: var(--topbar-height);
     background: rgba(15, 23, 42, 0.45);
-    backdrop-filter: blur(2px);
     z-index: 90;
   }
 }
