@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import {
   GraduationCap,
   UserPlus,
@@ -10,8 +11,6 @@ import {
   X,
   Plus,
   User,
-  Upload,
-  Trash2,
   ChevronDown,
 } from "lucide-react";
 import "./StudentAdmission.css";
@@ -20,7 +19,10 @@ import "./StudentAdmission.css";
 /* CONFIG                                                              */
 /* ================================================================== */
 const ADMISSION_LINK = "https://portal.paaschool.in/admission"; // put your real link here
+const UPLOAD_PATH = "/students/admission/upload-picture"; // must match the route you added for <UploadPicture />
+const UPLOAD_PATHBULK = "/students/admission/upload-bulk"; // must match the route you added for <UploadPicture />
 
+const SESSIONS = ["2025-26", "2026-27", "2027-28"];
 const CLASSES = ["Nursery", "LKG", "UKG", ...Array.from({ length: 12 }, (_, i) => `Class ${i + 1}`)];
 const SECTIONS = ["A", "B", "C", "D"];
 const GENDERS = ["Male", "Female", "Other"];
@@ -41,6 +43,7 @@ const OCCUPATIONS = [
   "Driver",
   "Labourer",
   "Retired",
+  "Homemaker",
   "Other",
 ];
 const FEE_CATEGORIES = ["Regular", "Staff child", "Sibling concession", "RTE", "Scholarship"];
@@ -61,13 +64,13 @@ const STEP_INTRO = [
 ];
 
 const MAX_PHOTO_MB = 2;
-const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const CLOSE_MS = 240; // must match the closing animation time in the CSS
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
 const INITIAL = {
   // Step 1
   adNo: "", admissionDate: todayStr(), session: "2026-27",
-  srNo: "", deviceNo: "", formNo: "", apparId: "",
+  srNo: "", deviceNo: "", apparId: "",
   studentName: "", aadhar: "", dob: "",
   gender: "", className: "", section: "",
   admissionType: "New", religion: "", category: "", handicap: "No", bloodGroup: "",
@@ -118,8 +121,8 @@ const Field = ({ label, required, error, value, className = "", kind, children }
 /* Menu is rendered in a portal with position: fixed, so it can never  */
 /* be clipped by the drawer or flop outside the screen.                */
 /* ================================================================== */
-const DD_MAX_H = 260;
-const DD_ROW_H = 40;
+const DD_MAX_H = 264;
+const DD_ROW_H = 44;
 
 const SaDropdown = ({ value, onChange, options, placeholder = "Select", allowEmpty = false, disabled = false }) => {
   const [open, setOpen] = useState(false);
@@ -296,6 +299,7 @@ const SaDropdown = ({ value, onChange, options, placeholder = "Select", allowEmp
 
 /* ================================================================== */
 /* NEW STUDENT ADMISSION DRAWER (4 steps)                              */
+/* Opens with a slide-in and closes with a slide-out                   */
 /* ================================================================== */
 const AdmissionDrawer = ({ onClose, onSaved }) => {
   const [step, setStep] = useState(0);
@@ -303,8 +307,21 @@ const AdmissionDrawer = ({ onClose, onSaved }) => {
   const [errors, setErrors] = useState({});
   const [photo, setPhoto] = useState(null); // { file, url }
   const [photoError, setPhotoError] = useState("");
+  const [closing, setClosing] = useState(false);
   const fileRef = useRef(null);
   const scrollRef = useRef(null);
+  const closingRef = useRef(false);
+  const timerRef = useRef(null);
+
+  /* play the closing animation, then really close */
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    setClosing(true);
+    timerRef.current = setTimeout(onClose, CLOSE_MS);
+  }, [onClose]);
+
+  useEffect(() => () => clearTimeout(timerRef.current), []);
 
   /* works with normal inputs (event) and SaDropdown (plain value) */
   const set = (key) => (e) => {
@@ -317,13 +334,13 @@ const AdmissionDrawer = ({ onClose, onSaved }) => {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (e) => e.key === "Escape" && onClose();
+    const onKey = (e) => e.key === "Escape" && requestClose();
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [onClose]);
+  }, [requestClose]);
 
   /* free the preview URL */
   useEffect(() => {
@@ -418,16 +435,19 @@ const AdmissionDrawer = ({ onClose, onSaved }) => {
     console.log("Admission data:", { ...form, prevPercent }, photo?.file);
 
     onSaved("Student admitted successfully");
-    onClose();
+    requestClose();
   };
 
   const isLast = step === STEPS.length - 1;
   const intro = STEP_INTRO[step];
 
   return (
-    <div className="sa-overlay sa-overlay--right" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div
+      className={`sa-overlay sa-overlay--right ${closing ? "is-closing" : ""}`}
+      onMouseDown={(e) => e.target === e.currentTarget && requestClose()}
+    >
       <aside className="sa-drawer" role="dialog" aria-modal="true" aria-label="New student admission">
-        <button type="button" className="sa-drawer__close" onClick={onClose} aria-label="Close">
+        <button type="button" className="sa-drawer__close" onClick={requestClose} aria-label="Close">
           <X size={18} />
         </button>
 
@@ -472,218 +492,223 @@ const AdmissionDrawer = ({ onClose, onSaved }) => {
               <p>{intro.sub}</p>
             </div>
 
-            {/* ============ STEP 1 ============ */}
-            {step === 0 && (
-              <>
-                <div className="sa-top-row">
-                  <div className="sa-photo">
-                    <button
-                      type="button"
-                      className="sa-photo__ring"
-                      onClick={() => fileRef.current?.click()}
-                      aria-label="Upload student profile photo"
-                    >
-                      {photo ? <img src={photo.url} alt="Student preview" /> : <User size={56} />}
-                      <span className="sa-photo__plus"><Plus size={16} /></span>
-                    </button>
-                    <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickPhoto} />
-                    <small>
-                      {photo ? photo.file.name : `Profile photo (JPG, PNG, max ${MAX_PHOTO_MB} MB)`}
-                    </small>
-                    {photo && (
-                      <button type="button" className="sa-photo__remove" onClick={removePhoto}>
-                        Remove photo
+            {/* key={step} replays the fade-in every time the step changes */}
+            <div className="sa-step-body" key={step}>
+              {/* ============ STEP 1 ============ */}
+              {step === 0 && (
+                <>
+                  <div className="sa-top-row">
+                    <div className="sa-photo">
+                      <button
+                        type="button"
+                        className="sa-photo__ring"
+                        onClick={() => fileRef.current?.click()}
+                        aria-label="Upload student profile photo"
+                      >
+                        {photo ? <img src={photo.url} alt="Student preview" /> : <User size={56} />}
+                        <span className="sa-photo__plus"><Plus size={16} /></span>
                       </button>
-                    )}
-                    {photoError && <span className="sa-error">{photoError}</span>}
+                      <input ref={fileRef} type="file" accept="image/*" hidden onChange={pickPhoto} />
+                      <small>
+                        {photo ? photo.file.name : `Profile photo (JPG, PNG, max ${MAX_PHOTO_MB} MB)`}
+                      </small>
+                      {photo && (
+                        <button type="button" className="sa-photo__remove" onClick={removePhoto}>
+                          Remove photo
+                        </button>
+                      )}
+                      {photoError && <span className="sa-error">{photoError}</span>}
+                    </div>
+
+                    <div className="sa-grid sa-grid--2">
+                      <Field label="Admission No." required error={errors.adNo} value={form.adNo}>
+                        <input value={form.adNo} onChange={set("adNo")} />
+                      </Field>
+                      <Field label="Admission Date" required kind="date" error={errors.admissionDate} value={form.admissionDate}>
+                        <input type="date" value={form.admissionDate} onChange={set("admissionDate")} />
+                      </Field>
+                      <Field label="Admission Session" kind="select">
+                        <SaDropdown value={form.session} onChange={set("session")} options={SESSIONS} />
+                      </Field>
+                      <Field label="SR No." required error={errors.srNo} value={form.srNo}>
+                        <input value={form.srNo} onChange={set("srNo")} />
+                      </Field>
+                      <Field label="Device No.">
+                        <input value={form.deviceNo} onChange={set("deviceNo")} />
+                      </Field>
+                      <Field label="APAAR ID">
+                        <input value={form.apparId} onChange={set("apparId")} />
+                      </Field>
+                    </div>
                   </div>
 
-                  <div className="sa-grid sa-grid--2">
-                    <Field label="Admission No." required error={errors.adNo} value={form.adNo}>
-                      <input value={form.adNo} onChange={set("adNo")} />
+                  <hr className="sa-divider" />
+
+                  <div className="sa-grid">
+                    <Field label="Student Name" required error={errors.studentName} value={form.studentName} className="sa-span-3">
+                      <input value={form.studentName} onChange={set("studentName")} />
                     </Field>
-                    <Field label="Admission Date" required kind="date" error={errors.admissionDate} value={form.admissionDate}>
-                      <input type="date" value={form.admissionDate} onChange={set("admissionDate")} />
+
+                    <Field label="Aadhar No." error={errors.aadhar}>
+                      <input inputMode="numeric" maxLength={12} value={form.aadhar} onChange={set("aadhar")} />
                     </Field>
-                    <Field label="Admission Session">
-                      <input value={form.session} onChange={set("session")} placeholder="2026-27" />
+                    <Field label="Date of Birth" required kind="date" error={errors.dob} value={form.dob}>
+                      <input type="date" value={form.dob} onChange={set("dob")} />
                     </Field>
-                    <Field label="SR No." required error={errors.srNo} value={form.srNo}>
-                      <input value={form.srNo} onChange={set("srNo")} />
+                    <Field label="Select Gender" required kind="select" error={errors.gender} value={form.gender}>
+                      <SaDropdown value={form.gender} onChange={set("gender")} options={GENDERS} />
                     </Field>
-                    <Field label="Device No.">
-                      <input value={form.deviceNo} onChange={set("deviceNo")} />
+
+                    <Field label="Select Class" required kind="select" error={errors.className} value={form.className}>
+                      <SaDropdown value={form.className} onChange={set("className")} options={CLASSES} />
                     </Field>
-                    <Field label="Form No.">
-                      <input value={form.formNo} onChange={set("formNo")} />
+                    <Field label="Select Section" required kind="select" error={errors.section} value={form.section}>
+                      <SaDropdown value={form.section} onChange={set("section")} options={SECTIONS} />
                     </Field>
-                    <Field label="APAAR ID" className="sa-span-2">
-                      <input value={form.apparId} onChange={set("apparId")} />
+                    <Field label="Admission Type" kind="select">
+                      <SaDropdown value={form.admissionType} onChange={set("admissionType")} options={ADMISSION_TYPES} />
+                    </Field>
+
+                    <Field label="Select Religion" kind="select">
+                      <SaDropdown value={form.religion} onChange={set("religion")} options={RELIGIONS} allowEmpty />
+                    </Field>
+                    <Field label="Select Category" kind="select">
+                      <SaDropdown value={form.category} onChange={set("category")} options={CATEGORIES} allowEmpty />
+                    </Field>
+                    <Field label="Handicap" kind="select">
+                      <SaDropdown value={form.handicap} onChange={set("handicap")} options={YES_NO} />
+                    </Field>
+
+                    <Field label="Select Blood Group" kind="select">
+                      <SaDropdown value={form.bloodGroup} onChange={set("bloodGroup")} options={BLOOD_GROUPS} allowEmpty />
                     </Field>
                   </div>
-                </div>
+                </>
+              )}
 
-                <hr className="sa-divider" />
-
+              {/* ============ STEP 2 ============ */}
+              {step === 1 && (
                 <div className="sa-grid">
-                  <Field label="Student Name" required error={errors.studentName} value={form.studentName} className="sa-span-3">
-                    <input value={form.studentName} onChange={set("studentName")} />
+                  {/* ---- Father (2 rows; the leftover space stays empty) ---- */}
+                  <Field label="Father's Name" required error={errors.fatherName} value={form.fatherName}>
+                    <input value={form.fatherName} onChange={set("fatherName")} />
+                  </Field>
+                  <Field label="Father's Mobile" required error={errors.fatherMobile} value={form.fatherMobile}>
+                    <input inputMode="numeric" maxLength={10} value={form.fatherMobile} onChange={set("fatherMobile")} />
+                  </Field>
+                  <Field label="Father's Email" error={errors.fatherEmail}>
+                    <input type="email" inputMode="email" value={form.fatherEmail} onChange={set("fatherEmail")} />
                   </Field>
 
-                  <Field label="Aadhar No." error={errors.aadhar}>
-                    <input inputMode="numeric" maxLength={12} value={form.aadhar} onChange={set("aadhar")} />
+                  <Field label="Father's Occupation" kind="select">
+                    <SaDropdown
+                      value={form.fatherOccupation}
+                      onChange={set("fatherOccupation")}
+                      options={OCCUPATIONS}
+                      allowEmpty
+                    />
                   </Field>
-                  <Field label="Date of Birth" required kind="date" error={errors.dob} value={form.dob}>
-                    <input type="date" value={form.dob} onChange={set("dob")} />
-                  </Field>
-                  <Field label="Select Gender" required kind="select" error={errors.gender} value={form.gender}>
-                    <SaDropdown value={form.gender} onChange={set("gender")} options={GENDERS} />
-                  </Field>
-
-                  <Field label="Select Class" required kind="select" error={errors.className} value={form.className}>
-                    <SaDropdown value={form.className} onChange={set("className")} options={CLASSES} />
-                  </Field>
-                  <Field label="Select Section" required kind="select" error={errors.section} value={form.section}>
-                    <SaDropdown value={form.section} onChange={set("section")} options={SECTIONS} />
-                  </Field>
-                  <Field label="Admission Type" kind="select">
-                    <SaDropdown value={form.admissionType} onChange={set("admissionType")} options={ADMISSION_TYPES} />
+                  <Field label="Annual Income (Rs.)" error={errors.fatherIncome}>
+                    <input inputMode="decimal" value={form.fatherIncome} onChange={set("fatherIncome")} />
                   </Field>
 
-                  <Field label="Select Religion" kind="select">
-                    <SaDropdown value={form.religion} onChange={set("religion")} options={RELIGIONS} allowEmpty />
+                  {/* ---- Mother (always starts from the left) ---- */}
+                  <Field label="Mother's Name" className="sa-break">
+                    <input value={form.motherName} onChange={set("motherName")} />
                   </Field>
-                  <Field label="Select Category" kind="select">
-                    <SaDropdown value={form.category} onChange={set("category")} options={CATEGORIES} allowEmpty />
+                  <Field label="Mother's Mobile" error={errors.motherMobile}>
+                    <input inputMode="numeric" maxLength={10} value={form.motherMobile} onChange={set("motherMobile")} />
                   </Field>
-                  <Field label="Handicap" kind="select">
-                    <SaDropdown value={form.handicap} onChange={set("handicap")} options={YES_NO} />
+                  <Field label="Mother's Occupation" kind="select">
+                    <SaDropdown
+                      value={form.motherOccupation}
+                      onChange={set("motherOccupation")}
+                      options={OCCUPATIONS}
+                      allowEmpty
+                    />
                   </Field>
 
-                  <Field label="Select Blood Group" kind="select">
-                    <SaDropdown value={form.bloodGroup} onChange={set("bloodGroup")} options={BLOOD_GROUPS} allowEmpty />
+                  {/* ---- Guardian (always starts from the left) ---- */}
+                  <Field label="Guardian's Name" className="sa-break">
+                    <input value={form.guardianName} onChange={set("guardianName")} />
+                  </Field>
+                  <Field label="Guardian's Contact" error={errors.guardianContact}>
+                    <input inputMode="numeric" maxLength={10} value={form.guardianContact} onChange={set("guardianContact")} />
+                  </Field>
+
+                  {/* ---- Address ---- */}
+                  <Field label="Address" className="sa-span-3">
+                    <textarea value={form.address} onChange={set("address")} />
+                  </Field>
+                  <Field label="City / Village" className="sa-span-2">
+                    <input value={form.city} onChange={set("city")} />
+                  </Field>
+                  <Field label="PIN Code" error={errors.pinCode}>
+                    <input inputMode="numeric" maxLength={6} value={form.pinCode} onChange={set("pinCode")} />
                   </Field>
                 </div>
-              </>
-            )}
+              )}
 
-            {/* ============ STEP 2 ============ */}
-            {step === 1 && (
-              <div className="sa-grid">
-                {/* ---- Father (2 rows; the leftover space stays empty) ---- */}
-                <Field label="Father's Name" required error={errors.fatherName} value={form.fatherName}>
-                  <input value={form.fatherName} onChange={set("fatherName")} />
-                </Field>
-                <Field label="Father's Mobile" required error={errors.fatherMobile} value={form.fatherMobile}>
-                  <input inputMode="numeric" maxLength={10} value={form.fatherMobile} onChange={set("fatherMobile")} />
-                </Field>
-                <Field label="Father's Email" error={errors.fatherEmail}>
-                  <input type="email" inputMode="email" value={form.fatherEmail} onChange={set("fatherEmail")} />
-                </Field>
+              {/* ============ STEP 3 ============ */}
+              {step === 2 && (
+                <div className="sa-grid">
+                  <Field label="School Name" className="sa-span-2">
+                    <input value={form.prevSchool} onChange={set("prevSchool")} />
+                  </Field>
+                  <Field label="Class Name" kind="select">
+                    <SaDropdown value={form.prevClass} onChange={set("prevClass")} options={CLASSES} allowEmpty />
+                  </Field>
 
-                <Field label="Father's Occupation" kind="select">
-                  <SaDropdown
-                    value={form.fatherOccupation}
-                    onChange={set("fatherOccupation")}
-                    options={OCCUPATIONS}
-                    allowEmpty
-                  />
-                </Field>
-                <Field label="Annual Income (Rs.)" error={errors.fatherIncome}>
-                  <input inputMode="decimal" value={form.fatherIncome} onChange={set("fatherIncome")} />
-                </Field>
+                  <Field label="Maximum Marks" error={errors.maxMarks}>
+                    <input inputMode="decimal" value={form.maxMarks} onChange={set("maxMarks")} />
+                  </Field>
+                  <Field label="Board Marks" error={errors.boardMarks}>
+                    <input inputMode="decimal" value={form.boardMarks} onChange={set("boardMarks")} />
+                  </Field>
+                  <Field label="Percentage (%)">
+                    <input value={prevPercent} placeholder="Auto" disabled readOnly />
+                  </Field>
+                </div>
+              )}
 
-                {/* ---- Mother (always starts from the left) ---- */}
-                <Field label="Mother's Name" className="sa-break">
-                  <input value={form.motherName} onChange={set("motherName")} />
-                </Field>
-                <Field label="Mother's Mobile" error={errors.motherMobile}>
-                  <input inputMode="numeric" maxLength={10} value={form.motherMobile} onChange={set("motherMobile")} />
-                </Field>
-                <Field label="Mother's Occupation">
-                  <input value={form.motherOccupation} onChange={set("motherOccupation")} />
-                </Field>
+              {/* ============ STEP 4 ============ */}
+              {step === 3 && (
+                <div className="sa-grid">
+                  <Field label="Fee Category" required kind="select" error={errors.feeCategory} value={form.feeCategory}>
+                    <SaDropdown value={form.feeCategory} onChange={set("feeCategory")} options={FEE_CATEGORIES} />
+                  </Field>
+                  <Field label="Transport Required" kind="select">
+                    <SaDropdown value={form.transport} onChange={set("transport")} options={YES_NO} />
+                  </Field>
+                  <Field label="Transport Route" required={form.transport === "Yes"} error={errors.route} value={form.route}>
+                    <input value={form.route} onChange={set("route")} disabled={form.transport !== "Yes"} />
+                  </Field>
 
-                {/* ---- Guardian (always starts from the left) ---- */}
-                <Field label="Guardian's Name" className="sa-break">
-                  <input value={form.guardianName} onChange={set("guardianName")} />
-                </Field>
-                <Field label="Guardian's Contact" error={errors.guardianContact}>
-                  <input inputMode="numeric" maxLength={10} value={form.guardianContact} onChange={set("guardianContact")} />
-                </Field>
+                  <Field label="Admission Fee (Rs.)" error={errors.admissionFee}>
+                    <input inputMode="decimal" value={form.admissionFee} onChange={set("admissionFee")} />
+                  </Field>
+                  <Field label="Discount (Rs.)" error={errors.discount}>
+                    <input inputMode="decimal" value={form.discount} onChange={set("discount")} />
+                  </Field>
+                  <Field label="Amount Paid (Rs.)" error={errors.amountPaid}>
+                    <input inputMode="decimal" value={form.amountPaid} onChange={set("amountPaid")} />
+                  </Field>
 
-                {/* ---- Address ---- */}
-                <Field label="Address" className="sa-span-3">
-                  <textarea value={form.address} onChange={set("address")} />
-                </Field>
-                <Field label="City / Village" className="sa-span-2">
-                  <input value={form.city} onChange={set("city")} />
-                </Field>
-                <Field label="PIN Code" error={errors.pinCode}>
-                  <input inputMode="numeric" maxLength={6} value={form.pinCode} onChange={set("pinCode")} />
-                </Field>
-              </div>
-            )}
-
-            {/* ============ STEP 3 ============ */}
-            {step === 2 && (
-              <div className="sa-grid">
-                <Field label="School Name" className="sa-span-2">
-                  <input value={form.prevSchool} onChange={set("prevSchool")} />
-                </Field>
-                <Field label="Class Name" kind="select">
-                  <SaDropdown value={form.prevClass} onChange={set("prevClass")} options={CLASSES} allowEmpty />
-                </Field>
-
-                <Field label="Maximum Marks" error={errors.maxMarks}>
-                  <input inputMode="decimal" value={form.maxMarks} onChange={set("maxMarks")} />
-                </Field>
-                <Field label="Board Marks" error={errors.boardMarks}>
-                  <input inputMode="decimal" value={form.boardMarks} onChange={set("boardMarks")} />
-                </Field>
-                <Field label="Percentage (%)">
-                  <input value={prevPercent} placeholder="Auto" disabled readOnly />
-                </Field>
-              </div>
-            )}
-
-            {/* ============ STEP 4 ============ */}
-            {step === 3 && (
-              <div className="sa-grid">
-                <Field label="Fee Category" required kind="select" error={errors.feeCategory} value={form.feeCategory}>
-                  <SaDropdown value={form.feeCategory} onChange={set("feeCategory")} options={FEE_CATEGORIES} />
-                </Field>
-                <Field label="Transport Required" kind="select">
-                  <SaDropdown value={form.transport} onChange={set("transport")} options={YES_NO} />
-                </Field>
-                <Field label="Transport Route" required={form.transport === "Yes"} error={errors.route} value={form.route}>
-                  <input value={form.route} onChange={set("route")} disabled={form.transport !== "Yes"} />
-                </Field>
-
-                <Field label="Admission Fee (Rs.)" error={errors.admissionFee}>
-                  <input inputMode="decimal" value={form.admissionFee} onChange={set("admissionFee")} />
-                </Field>
-                <Field label="Discount (Rs.)" error={errors.discount}>
-                  <input inputMode="decimal" value={form.discount} onChange={set("discount")} />
-                </Field>
-                <Field label="Amount Paid (Rs.)" error={errors.amountPaid}>
-                  <input inputMode="decimal" value={form.amountPaid} onChange={set("amountPaid")} />
-                </Field>
-
-                <Field label="Payment Mode" kind="select">
-                  <SaDropdown value={form.paymentMode} onChange={set("paymentMode")} options={PAYMENT_MODES} allowEmpty />
-                </Field>
-                <Field label="Remarks" className="sa-span-2">
-                  <input value={form.remarks} onChange={set("remarks")} />
-                </Field>
-              </div>
-            )}
+                  <Field label="Payment Mode" kind="select">
+                    <SaDropdown value={form.paymentMode} onChange={set("paymentMode")} options={PAYMENT_MODES} allowEmpty />
+                  </Field>
+                  <Field label="Remarks" className="sa-span-2">
+                    <input value={form.remarks} onChange={set("remarks")} />
+                  </Field>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Footer */}
         <div className="sa-footer">
-          <button type="button" className="sa-btn" onClick={onClose}>Cancel</button>
+          <button type="button" className="sa-btn" onClick={requestClose}>Cancel</button>
           <div className="sa-footer__right">
             {step > 0 && (
               <button type="button" className="sa-btn" onClick={back}>Back</button>
@@ -705,200 +730,12 @@ const AdmissionDrawer = ({ onClose, onSaved }) => {
 };
 
 /* ================================================================== */
-/* UPLOAD PICTURE MODAL (batch photos)                                 */
-/* ================================================================== */
-const formatSize = (bytes) =>
-  bytes < 1024 * 1024 ? `${Math.round(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-
-// "1024.jpg" -> "1024"  (the file name is used as the admission number)
-const admissionNoFrom = (name) => name.replace(/\.[^.]+$/, "").trim();
-
-const UploadPictureModal = ({ onClose, onDone }) => {
-  const [items, setItems] = useState([]); // { id, file, url, adNo, error }
-  const [over, setOver] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const inputRef = useRef(null);
-  const itemsRef = useRef([]);
-  itemsRef.current = items;
-
-  /* close on Escape + lock page scroll */
-  useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [onClose]);
-
-  /* free every preview URL when the modal closes */
-  useEffect(() => {
-    return () => itemsRef.current.forEach((i) => URL.revokeObjectURL(i.url));
-  }, []);
-
-  const addFiles = (fileList) => {
-    const incoming = Array.from(fileList || []);
-    if (!incoming.length) return;
-
-    setItems((prev) => {
-      const known = new Set(prev.map((p) => `${p.file.name}-${p.file.size}`));
-      const added = incoming
-        .filter((f) => !known.has(`${f.name}-${f.size}`)) // skip exact duplicates
-        .map((file) => {
-          let error = "";
-          if (!ALLOWED_TYPES.includes(file.type)) error = "Use JPG, PNG or WEBP";
-          else if (file.size > MAX_PHOTO_MB * 1024 * 1024) error = `Over ${MAX_PHOTO_MB} MB`;
-          else if (!/^[\w-]+$/.test(admissionNoFrom(file.name))) error = "Rename file to the admission no.";
-          return {
-            id: `${file.name}-${file.size}-${Math.random().toString(36).slice(2, 7)}`,
-            file,
-            url: URL.createObjectURL(file),
-            adNo: admissionNoFrom(file.name),
-            error,
-          };
-        });
-      return [...prev, ...added];
-    });
-  };
-
-  const removeItem = (id) =>
-    setItems((prev) => {
-      const gone = prev.find((i) => i.id === id);
-      if (gone) URL.revokeObjectURL(gone.url);
-      return prev.filter((i) => i.id !== id);
-    });
-
-  const clearAll = () => {
-    items.forEach((i) => URL.revokeObjectURL(i.url));
-    setItems([]);
-  };
-
-  const valid = items.filter((i) => !i.error);
-  const invalidCount = items.length - valid.length;
-
-  const upload = async () => {
-    if (!valid.length) return;
-    setBusy(true);
-    try {
-      // TODO: replace with your API call. The server should save each file
-      // against the student whose admission number matches `adNo`.
-      //
-      // const fd = new FormData();
-      // valid.forEach((i) => {
-      //   fd.append("photos", i.file);
-      //   fd.append("admissionNos", i.adNo);
-      // });
-      // await axios.post("/api/students/photos", fd);
-      console.log(
-        "Uploading photos:",
-        valid.map((i) => ({ adNo: i.adNo, file: i.file.name }))
-      );
-
-      onDone(`${valid.length} photo${valid.length > 1 ? "s" : ""} uploaded`);
-      onClose();
-    } catch {
-      onDone("Upload failed. Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="sa-overlay sa-overlay--center" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="sa-modal" role="dialog" aria-modal="true" aria-label="Upload student photos">
-        <div className="sa-modal__head">
-          <div>
-            <h3>Upload student photos</h3>
-            <p>
-              Name each photo with the student's admission number, for example 1024.jpg.
-              Up to {MAX_PHOTO_MB} MB each.
-            </p>
-          </div>
-          <button type="button" className="sa-modal__close" onClick={onClose} aria-label="Close">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="sa-modal__body">
-          <div
-            className={`sa-drop ${over ? "is-over" : ""}`}
-            role="button"
-            tabIndex={0}
-            onClick={() => inputRef.current?.click()}
-            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && inputRef.current?.click()}
-            onDragOver={(e) => { e.preventDefault(); setOver(true); }}
-            onDragLeave={() => setOver(false)}
-            onDrop={(e) => { e.preventDefault(); setOver(false); addFiles(e.dataTransfer.files); }}
-          >
-            <Upload size={28} />
-            <b>Drop photos here or click to choose</b>
-            JPG, PNG or WEBP. You can select many files at once.
-            <input
-              ref={inputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              hidden
-              onChange={(e) => { addFiles(e.target.files); e.target.value = ""; }}
-            />
-          </div>
-
-          {items.length > 0 && (
-            <ul className="sa-files">
-              {items.map((i) => (
-                <li className="sa-file" key={i.id}>
-                  <img src={i.url} alt="" />
-                  <div style={{ minWidth: 0 }}>
-                    <div className="sa-file__name">{i.file.name}</div>
-                    <div className="sa-file__meta">
-                      Admission no. {i.adNo || "-"} · {formatSize(i.file.size)}
-                    </div>
-                  </div>
-                  <span className={`sa-tag ${i.error ? "sa-tag--bad" : "sa-tag--ok"}`}>
-                    {i.error || "Ready"}
-                  </span>
-                  <button type="button" onClick={() => removeItem(i.id)} aria-label={`Remove ${i.file.name}`}>
-                    <Trash2 size={18} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="sa-modal__foot">
-          <span>
-            {items.length === 0
-              ? "No photos selected"
-              : `${valid.length} ready${invalidCount ? `, ${invalidCount} need fixing` : ""}`}
-          </span>
-          <div className="sa-footer__right">
-            {items.length > 0 && (
-              <button type="button" className="sa-btn" onClick={clearAll}>Clear all</button>
-            )}
-            <button
-              type="button"
-              className="sa-btn sa-btn--primary"
-              onClick={upload}
-              disabled={!valid.length || busy}
-            >
-              {busy ? "Uploading..." : `Upload ${valid.length || ""} photo${valid.length === 1 ? "" : "s"}`}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-/* ================================================================== */
 /* MAIN COMPONENT: the 5 option cards                                  */
+/* "Upload Picture" opens the separate <UploadPicture /> page          */
 /* ================================================================== */
 const StudentAdmission = () => {
+  const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [uploadOpen, setUploadOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [toast, setToast] = useState("");
 
@@ -949,15 +786,14 @@ const StudentAdmission = () => {
       icon: <UserPlus size={28} />,
       title: "Bulk Admission",
       desc: "Import multiple students via Excel",
-      onClick: () => showToast("Bulk admission screen coming next"),
-    },
+      onClick: () => navigate(UPLOAD_PATHBULK),     },
     {
       key: "photo",
       tone: "orange",
       icon: <CircleUserRound size={28} />,
       title: "Upload Picture",
       desc: "Batch upload student photos",
-      onClick: () => setUploadOpen(true),
+      onClick: () => navigate(UPLOAD_PATH), // opens the UploadPicture page
     },
     {
       key: "blank",
@@ -991,10 +827,6 @@ const StudentAdmission = () => {
 
       {drawerOpen && (
         <AdmissionDrawer onClose={() => setDrawerOpen(false)} onSaved={showToast} />
-      )}
-
-      {uploadOpen && (
-        <UploadPictureModal onClose={() => setUploadOpen(false)} onDone={showToast} />
       )}
 
       {toast && (

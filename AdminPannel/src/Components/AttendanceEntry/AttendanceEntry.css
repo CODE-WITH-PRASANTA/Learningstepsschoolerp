@@ -1,0 +1,551 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+
+/* ------------------------------------------------------------------ */
+/*  Theme – every colour of this component lives here.                 */
+/*  Override these variables (parent or className) to re-theme only    */
+/*  this component.                                                    */
+/* ------------------------------------------------------------------ */
+.attendance-entry {
+  --ae-accent: #0ea5e9;
+  --ae-accent-dark: #0284c7;
+  --ae-head-from: #38bdf8;
+  --ae-head-to: #0284c7;
+  --ae-sky-50: #f0f9ff;
+  --ae-sky-100: #e0f2fe;
+  --ae-sky-200: #bae6fd;
+  --ae-border: #7dd3fc;
+  --ae-line: #bae6fd;
+  --ae-ink: #0c2a43;
+  --ae-muted: #4b7391;
+  --ae-placeholder: #7da3bf;
+  --ae-danger: #dc2626;
+  --ae-surface: #ffffff;
+
+  --ae-present: #16a34a;
+  --ae-absent: #dc2626;
+  --ae-half: #f59e0b;
+  --ae-leave: #f59e0b;
+  --ae-action: #0284c7;
+
+  --ae-height: 38px;
+  --ae-radius: 10px;
+
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  font-family: "Manrope", system-ui, sans-serif;
+  color: var(--ae-ink);
+  background: var(--ae-surface);
+  container-type: inline-size;
+}
+.attendance-entry *,
+.attendance-entry *::before,
+.attendance-entry *::after { box-sizing: border-box; }
+
+/* ---------- Tabs ---------- */
+.ae-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 8px 10px 0;
+  background: linear-gradient(180deg, var(--ae-sky-100), var(--ae-sky-50));
+  border-bottom: 2px solid var(--ae-accent);
+  overflow-x: auto;
+}
+.ae-tab {
+  flex: none;
+  padding: 9px 20px;
+  border: 1px solid var(--ae-line);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ae-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ae-tab:hover {
+  background: var(--ae-sky-100);
+  color: var(--ae-accent-dark);
+  border-color: var(--ae-border);
+}
+.ae-tab--active,
+.ae-tab--active:hover {
+  background: linear-gradient(180deg, var(--ae-head-from), var(--ae-head-to));
+  border-color: var(--ae-accent-dark);
+  color: #fff;
+}
+.ae-tab:focus-visible { outline: 3px solid rgba(14, 165, 233, 0.45); outline-offset: -3px; }
+
+/* ---------- Body ---------- */
+.ae-body { padding: 16px 18px 22px; min-width: 0; }
+
+.ae-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* ---------- Daily : date box ---------- */
+.ae-date {
+  height: var(--ae-height);
+  min-width: 170px;
+  padding: 0 12px;
+  border: 1.5px solid var(--ae-border);
+  border-radius: var(--ae-radius);
+  background: var(--ae-sky-50);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ae-ink);
+  cursor: pointer;
+}
+.ae-date:hover { border-color: var(--ae-accent); background: var(--ae-sky-100); }
+.ae-date:focus {
+  outline: none;
+  border-color: var(--ae-accent-dark);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.22);
+}
+
+/* print button */
+.ae-print {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--ae-height);
+  height: var(--ae-height);
+  padding: 0;
+  border: 0;
+  border-radius: var(--ae-radius);
+  background: linear-gradient(135deg, #29b6f6, #0284c7);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+}
+.ae-print:hover { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
+.ae-print:focus-visible { outline: 3px solid rgba(14, 165, 233, 0.45); outline-offset: 2px; }
+
+/* ---------- Monthly / Biometric : filter row (always wraps, never hides) ---------- */
+.ae-heading {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ae-accent-dark);
+}
+.ae-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px 12px;
+  padding-top: 8px;
+  min-width: 0;
+}
+
+/* floating-label field (select + date/month input) */
+.ae-field {
+  flex: 1 1 170px;
+  min-width: 0;
+  max-width: 230px;
+}
+
+.ae-field__box {
+  position: relative;
+  height: var(--ae-height);
+  border: 1.5px solid var(--ae-border);
+  border-radius: var(--ae-radius);
+  background: #fff;
+}
+.ae-field__box--filled,
+.ae-field__box--input { background: var(--ae-sky-50); }
+.ae-field__box:hover { border-color: var(--ae-accent); }
+.ae-field__box--open,
+.ae-field__box:focus-within {
+  border-color: var(--ae-accent-dark);
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.22);
+}
+
+.ae-field__btn {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0 38px 0 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ae-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  outline: none;
+}
+.ae-field__box--empty .ae-field__btn { color: var(--ae-placeholder); font-weight: 500; }
+
+.ae-field__input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 10px 0 12px;
+  border: 0;
+  border-radius: var(--ae-radius);
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ae-ink);
+  cursor: pointer;
+  outline: none;
+}
+
+.ae-field__label {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  transform: translateY(-50%);
+  padding: 0 4px;
+  background: var(--ae-surface);
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--ae-accent-dark);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.ae-field__star { color: var(--ae-danger); }
+
+.ae-field__chevron {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 100%;
+  color: var(--ae-accent-dark);
+  pointer-events: none;
+}
+.ae-field__box--open .ae-field__chevron svg { transform: rotate(180deg); }
+
+.ae-field__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  max-width: calc(100vw - 32px);
+  z-index: 40;
+  margin: 0;
+  padding: 5px;
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1.5px solid var(--ae-border);
+  border-radius: var(--ae-radius);
+  box-shadow: 0 12px 28px rgba(12, 42, 67, 0.16);
+}
+.ae-field__option {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ae-ink);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ae-field__option--active { background: var(--ae-sky-100); }
+.ae-field__option--selected { background: var(--ae-accent); color: #fff; font-weight: 800; }
+
+/* ---------- Buttons ---------- */
+.ae-btn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: var(--ae-height);
+  padding: 0 22px;
+  border: 0;
+  border-radius: var(--ae-radius);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.ae-btn--primary {
+  background: linear-gradient(135deg, #29b6f6, #0284c7);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+}
+.ae-btn--primary:hover:not(:disabled) { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
+.ae-btn--excel {
+  margin-left: auto; /* far right, drops to its own line when space is tight */
+  background: linear-gradient(135deg, #29b6f6, #0284c7);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+}
+.ae-btn--excel:hover:not(:disabled) { background: linear-gradient(135deg, #0ea5e9, #0369a1); }
+.ae-btn:disabled {
+  background: var(--ae-sky-200);
+  color: #fff;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.ae-btn:focus-visible { outline: 3px solid rgba(14, 165, 233, 0.45); outline-offset: 2px; }
+
+/* ---------- Daily : table card (desktop) ---------- */
+.ae-card {
+  margin-top: 16px;
+  padding: 10px;
+  border: 1.5px solid var(--ae-border);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(14, 165, 233, 0.12);
+}
+.ae-table-wrap { overflow-x: auto; border-radius: 8px; }
+.ae-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.ae-th {
+  padding: 9px 12px;
+  background: linear-gradient(180deg, var(--ae-head-from), var(--ae-head-to));
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.ae-td {
+  height: 46px;
+  padding: 4px 12px;
+  border: 1px solid var(--ae-line);
+  background: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ae-ink);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+.ae-td--strong { font-size: 15px; font-weight: 700; }
+.ae-td--center { text-align: center; }
+.ae-td--class {
+  background: var(--ae-sky-50);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ae-accent-dark);
+}
+.ae-tr:nth-child(even) .ae-td:not(.ae-td--class) { background: var(--ae-sky-50); }
+.ae-tr:hover .ae-td:not(.ae-td--class) { background: var(--ae-sky-100); }
+
+/* count badges */
+.ae-badge {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(12, 42, 67, 0.22);
+}
+.ae-badge:hover { box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.25), 0 2px 6px rgba(12, 42, 67, 0.22); }
+.ae-badge--present { background: var(--ae-present); }
+.ae-badge--absent { background: var(--ae-absent); }
+.ae-badge--half { background: var(--ae-half); }
+.ae-badge--leave { background: var(--ae-leave); }
+
+/* action icon */
+.ae-action {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ae-action);
+  cursor: pointer;
+}
+.ae-action:hover { background: var(--ae-sky-100); border-color: var(--ae-border); }
+.ae-action:focus-visible { outline: 3px solid rgba(14, 165, 233, 0.45); outline-offset: 2px; }
+
+/* total row */
+.ae-tf {
+  padding: 9px 12px;
+  background: linear-gradient(180deg, var(--ae-head-from), var(--ae-head-to));
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.ae-tf--label { text-align: left; letter-spacing: 0.4px; }
+.ae-tf--center { text-align: center; }
+
+/* ================================================================== */
+/*  Responsive – based on the component width, not the screen width.   */
+/*  Every rule below uses plain class selectors only, so nothing above */
+/*  can override it by specificity.                                    */
+/* ================================================================== */
+
+/* ---- Tablet / mobile : table turns into cards, nothing is cut off ---- */
+@container (max-width: 900px) {
+  .ae-table-wrap { overflow: visible; }
+
+  .ae-table,
+  .ae-tbody,
+  .ae-tfoot {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+  .ae-thead { display: none; }
+
+  /* one card per class / section row (the 1px grid gap draws the lines) */
+  .ae-tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    margin-bottom: 12px;
+    border: 1.5px solid var(--ae-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--ae-line);
+    box-shadow: 0 3px 10px rgba(14, 165, 233, 0.1);
+  }
+  .ae-tr::before {
+    content: "Class " attr(data-class);
+    grid-column: 1 / -1;
+    padding: 8px 12px;
+    background: linear-gradient(180deg, var(--ae-head-from), var(--ae-head-to));
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+  }
+
+  /* cells : label on the left, value on the right */
+  .ae-td,
+  .ae-tr:nth-child(even) .ae-td:not(.ae-td--class),
+  .ae-tr:hover .ae-td:not(.ae-td--class) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+    height: auto;
+    min-height: 44px;
+    padding: 6px 12px;
+    border: 0;
+    background: #fff;
+    white-space: normal;
+    text-align: right;
+    word-break: break-word;
+  }
+  .ae-td::before {
+    content: attr(data-label);
+    flex: none;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: var(--ae-muted);
+    text-align: left;
+  }
+  .ae-td:empty::after { content: "-"; color: var(--ae-placeholder); }
+
+  /* class number is already in the card header */
+  .ae-td--class { display: none; }
+
+  .ae-td--strong { font-size: 14px; }
+  .ae-td--center { text-align: right; }
+  .ae-td--mobile { grid-column: 1 / -1; }
+  .ae-td--action { grid-column: 1 / -1; }
+
+  /* total row = one summary card */
+  .ae-total {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.45);
+    border: 1.5px solid var(--ae-accent-dark);
+  }
+  .ae-tf {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+    padding: 9px 12px;
+    border: 0;
+  }
+  .ae-tf--label { grid-column: 1 / -1; font-size: 14px; }
+  .ae-tf--center { text-align: right; }
+  .ae-tf[data-label]::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    opacity: 0.92;
+  }
+  .ae-tf--hide-sm { display: none; }
+}
+
+/* ---- Tablet only : cards use 4 columns ---- */
+@container (min-width: 641px) and (max-width: 900px) {
+  .ae-tr,
+  .ae-total { grid-template-columns: repeat(4, 1fr); }
+
+  /* section | total student | mobile (2 wide) on the first line */
+  .ae-td--mobile { grid-column: span 2; }
+}
+
+/* ---- Mobile : tighter spacing, the 3 tabs always fit in one row ---- */
+@container (max-width: 640px) {
+  .ae-body { padding: 12px 10px 18px; }
+  .ae-heading { font-size: 16px; }
+  .ae-date { flex: 1 1 0; min-width: 0; }
+  .ae-card { margin-top: 12px; padding: 8px; }
+
+  .ae-tabs { gap: 4px; padding: 8px 6px 0; overflow-x: hidden; }
+  .ae-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 4px;
+    font-size: 12px;
+    line-height: 1.25;
+    text-align: center;
+    white-space: normal;
+  }
+}
+
+/* ---- Small mobile : filter fields full width, Get + Excel share a row ---- */
+@container (max-width: 520px) {
+  .ae-filters { gap: 20px 10px; }
+  .ae-field { flex: 1 1 100%; max-width: none; }
+  .ae-field__menu { max-width: 100%; }
+  .ae-btn { flex: 1 1 calc(50% - 5px); }
+  .ae-btn--excel { margin-left: 0; }
+}

@@ -1,0 +1,167 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+
+.bulk {
+  --b-accent: #2465e6;
+  --b-accent-dark: #1e6ad4;
+  --b-ink: #1a2233;
+  --b-muted: #5b6678;
+  --b-soft: #8a94a6;
+
+  font-family: "Manrope", system-ui, sans-serif;
+  padding: 12px;
+}
+.bulk *, .bulk *::before, .bulk *::after { box-sizing: border-box; }
+
+/* ---------- Card ---------- */
+.bulk__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 14px 20px 22px;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 10px 32px rgba(60, 40, 120, 0.09);
+}
+
+/* top-right corner row */
+.bulk__top {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+/* profile icon – static, no animation */
+.bulk__icon {
+  margin-top: -4px;
+  color: var(--b-accent);
+  line-height: 0;
+}
+
+.bulk__title {
+  margin: 10px 0 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--b-ink);
+}
+.bulk__sub {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--b-muted);
+}
+.bulk__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+}
+.bulk__formats {
+  margin: 20px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--b-soft);
+}
+
+/* ---------- Download Template (top-right) ---------- */
+.bulk-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--b-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.bulk-download:hover {
+  background: var(--b-accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(124, 92, 219, 0.35);
+}
+.bulk-download:hover svg { animation: bulk-drop 0.7s ease infinite; }
+.bulk-download:active { transform: scale(0.96); }
+.bulk-download:focus-visible { outline: 3px solid rgba(124, 92, 219, 0.45); outline-offset: 2px; }
+
+/* ---------- Main buttons ---------- */
+.bulk-btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 22px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.bulk-btn--primary {
+  border: 2px solid var(--b-accent);
+  background: var(--b-accent);
+  color: #fff;
+}
+.bulk-btn--outline {
+  border: 2px solid var(--b-accent);
+  background: #fff;
+  color: var(--b-accent);
+}
+.bulk-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-20deg);
+  pointer-events: none;
+}
+.bulk-btn:hover { transform: translateY(-3px); }
+.bulk-btn:hover::before { animation: bulk-shine 0.7s ease; }
+.bulk-btn--primary:hover {
+  background: var(--b-accent-dark);
+  border-color: var(--b-accent-dark);
+  box-shadow: 0 12px 24px rgba(124, 92, 219, 0.4);
+}
+.bulk-btn--outline:hover {
+  background: #f5f0ff;
+  box-shadow: 0 10px 22px rgba(124, 92, 219, 0.18);
+}
+.bulk-btn:active { transform: scale(0.96); }
+.bulk-btn:focus-visible { outline: 3px solid rgba(124, 92, 219, 0.45); outline-offset: 3px; }
+.bulk-btn svg { transition: transform 0.25s ease; }
+.bulk-btn:hover svg { transform: translateY(-2px) scale(1.08); }
+
+/* ---------- Keyframes (buttons only) ---------- */
+@keyframes bulk-shine { to { left: 130%; } }
+@keyframes bulk-drop {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 560px) {
+  .bulk__actions { flex-direction: column; width: 100%; gap: 12px; }
+  .bulk-btn { width: 100%; }
+  .bulk__title { font-size: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bulk *, .bulk *::before, .bulk *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
